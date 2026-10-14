@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Group Chat</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; color: #f8fafc; margin: 0; padding: 20px; display: flex; justify-content: center; }
+    .chat-container { width: 100%; max-width: 500px; background: #1e293b; border-radius: 12px; padding: 20px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); }
+    h2 { margin-top: 0; color: #38bdf8; text-align: center; }
+    #chat-box { height: 350px; overflow-y: auto; border: 1px solid #334155; padding: 12px; border-radius: 8px; background: #0f172a; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .msg { background: #334155; padding: 8px 12px; border-radius: 8px; max-width: 85%; word-break: break-word; }
+    .msg strong { color: #38bdf8; display: block; font-size: 0.85rem; margin-bottom: 2px; }
+    .controls { display: flex; flex-direction: column; gap: 8px; }
+    input { background: #0f172a; border: 1px solid #334155; color: white; padding: 10px; border-radius: 6px; outline: none; }
+    input:focus { border-color: #38bdf8; }
+    .send-row { display: flex; gap: 8px; }
+    .send-row input { flex: 1; }
+    button { background: #0284c7; color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    button:hover { background: #0369a1; }
+  </style>
+
+  <!-- Firebase App & Realtime Database SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+  <div class="chat-container">
+    <h2>Group Chatroom</h2>
+    <div id="chat-box"></div>
+    
+    <div class="controls">
+      <input type="text" id="username" placeholder="Your Name" value="User1" />
+      <div class="send-row">
+        <input type="text" id="message" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendMsg()" />
+        <button onclick="sendMsg()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 1. Replace with your actual Firebase project config:
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const messagesRef = db.ref("messages");
+
+    // 2. Listen for incoming messages in real-time
+    messagesRef.limitToLast(50).on("child_added", (snapshot) => {
+      const data = snapshot.val();
+      appendMessage(data.username, data.text);
+    });
+
+    // 3. Send a new message
+    function sendMsg() {
+      const nameInput = document.getElementById("username");
+      const msgInput = document.getElementById("message");
+      
+      const username = nameInput.value.trim() || "Anonymous";
+      const text = msgInput.value.trim();
+
+      if (!text) return;
+
+      messagesRef.push({
+        username: username,
+        text: text,
+        timestamp: Date.now()
+      });
+
+      msgInput.value = "";
+    }
+
+    // Render message to screen
+    function appendMessage(user, text) {
+      const box = document.getElementById("chat-box");
+      const div = document.createElement("div");
+      div.className = "msg";
+      div.innerHTML = `<strong>${user}</strong> ${text}`;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+  </script>
+</body>
+</html>
